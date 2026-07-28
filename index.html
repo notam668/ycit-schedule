@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="盐城工学院新生课表查询系统 - 快速查询班级课程表，支持按学院、专业、班级三级筛选">
+    <meta name="keywords" content="盐城工学院,新生课表,课表查询,盐小工,课程表">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>盐工新生课表查询系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ========== CSS Variables ========== */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --accent-light: #67e8f9;
+            --surface: #0f172a;
+            --surface-2: #1e293b;
+            --surface-3: #334155;
+            --surface-card: rgba(30, 41, 59, 0.95);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.12);
+            --border-hover: rgba(148, 163, 184, 0.25);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+            --shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --font: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --transition: 0.2s ease-out;
+        }
+
+        /* ========== Reset ========== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: var(--font);
+            background: linear-gradient(180deg, #0f172a 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ========== Background Orbs (Reduced Performance) ========== */
+        .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .bg-orbs .orb { position: absolute; border-radius: 50%; opacity: 0.12; }
+        .bg-orbs .orb:nth-child(1) { width: 200px; height: 200px; background: #4f46e5; top: -30px; left: -30px; }
+        .bg-orbs .orb:nth-child(2) { width: 180px; height: 180px; background: #06b6d4; top: 50%; right: -50px; }
+        .bg-orbs .orb:nth-child(3) { width: 150px; height: 150px; background: #8b5cf6; bottom: 10%; left: 20%; }
+
+        /* ========== App Container ========== */
+        .app { position: relative; z-index: 1; max-width: 100%; margin: 0 auto; padding: 0 4px 30px; }
+        .app .inner { max-width: 390px; margin: 0 auto; }
+
+        /* ========== Header ========== */
+        .header { padding: 16px 0 12px; text-align: center; position: relative; }
+        .header::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 50px; height: 3px; background: var(--gradient-primary); border-radius: 2px; }
+        .logo-area { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
+        .logo-icon {
+            width: 38px; height: 38px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .header h1 { font-size: 1.15rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 0.5px; }
+        .semester-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 4px 12px; background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3); border-radius: 18px; font-size: 0.66rem; color: var(--primary-light); font-weight: 500; }
+        .semester-tag .dot { width: 5px; height: 5px; background: var(--success); border-radius: 50%; }
+
+        /* ========== Search Box ========== */
+        .search-box { margin-top: 14px; margin-bottom: 12px; position: relative; }
+        .search-box input {
+            width: 100%; padding: 11px 14px 11px 38px;
+            background: #1e293b;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font); font-size: 0.86rem; outline: none;
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-box input:focus { border-color: var(--primary-light); }
+        .search-box .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; opacity: 0.5; }
+
+        .search-results {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: #1e293b; border: 1px solid var(--border); border-radius: var(--radius-md);
+            max-height: 220px; overflow-y: auto; z-index: 100; display: none;
+        }
+        .search-results.show { display: block; }
+        .search-result-item { padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1px; }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:active { background: rgba(79,70,229,0.1); }
+        .search-result-item .sclass-name { font-weight: 600; font-size: 0.82rem; color: var(--text-primary); }
+        .search-result-item .sclass-info { font-size: 0.66rem; color: var(--text-muted); }
+
+        /* ========== Selection Panel ========== */
+        .selection-panel { margin-top: 0; }
+        .select-group { margin-bottom: 12px; }
+
+        .select-label { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.5px; }
+        .select-label .step-num { width: 19px; height: 19px; display: flex; align-items: center; justify-content: center; background: var(--gradient-primary); border-radius: 50%; font-size: 0.62rem; font-weight: 700; color: white; }
+        .select-wrapper { position: relative; }
+        .select-wrapper select {
+            width: 100%; padding: 11px 40px 11px 14px;
+            background: #1e293b;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font); font-size: 0.86rem; font-weight: 500;
+            appearance: none; -webkit-appearance: none; cursor: pointer; outline: none;
+        }
+        .select-wrapper select:focus { border-color: var(--primary-light); }
+        .select-wrapper select:disabled { opacity: 0.4; cursor: not-allowed; }
+        .select-wrapper::after { content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid var(--text-muted); pointer-events:none; }
+        select option { background: #1e293b; color: #f1f5f9; }
+
+        /* ========== Welcome ========== */
+        .welcome-area { text-align: center; padding: 30px 16px; }
+        .welcome-icon { font-size: 3rem; margin-bottom: 12px; }
+        .welcome-text { font-size: 0.88rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+        .welcome-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+        /* ========== Schedule Container ========== */
+        .schedule-container { margin-top: 20px; display: none; }
+        .schedule-container.show { display: block; }
+
+        .schedule-header { margin-bottom: 10px; }
+        .schedule-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+        .schedule-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+        .meta-badge { padding: 3px 10px; background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); border-radius: 18px; font-size: 0.62rem; color: var(--accent-light); font-weight: 500; }
+
+        /* ========== Stats Bar ========== */
+        .stats-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 12px; }
+        .stat-item { background: #1e293b; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 6px; text-align: center; }
+        .stat-value { font-size: 1.15rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+
+        /* ========== Week Selector ========== */
+        .week-selector {
+            display: flex; gap: 4px; padding: 4px;
+            background: #1e293b;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .week-selector::-webkit-scrollbar { display: none; }
+
+        .week-pill {
+            flex-shrink: 0;
+            padding: 6px 10px;
+            border: none; border-radius: 8px;
+            font-family: var(--font); font-size: 0.68rem; font-weight: 500;
+            color: var(--text-muted);
+            background: transparent; cursor: pointer;
+            white-space: nowrap;
+        }
+        .week-pill:active { color: var(--text-secondary); }
+        .week-pill.active {
+            background: var(--gradient-primary); color: white;
+            font-weight: 600;
+        }
+        .week-pill.total-pill { font-weight: 700; }
+
+        .week-indicator {
+            text-align: center; margin-bottom: 8px;
+            font-size: 0.68rem; color: var(--text-muted); font-weight: 500;
+        }
+        .week-indicator span { color: var(--accent-light); font-weight: 600; }
+
+        /* ========== Main Schedule Table ========== */
+        .schedule-table-wrapper {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: #1e293b;
+            overflow: hidden;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.6rem;
+            table-layout: fixed;
+        }
+
+        .schedule-table thead th {
+            padding: 5px 0px;
+            background: rgba(79,70,229,0.15);
+            color: var(--primary-light);
+            font-weight: 700;
+            text-align: center;
+            border-bottom: 2px solid rgba(79,70,229,0.3);
+            font-size: 0.58rem;
+            word-break: keep-all;
+        }
+
+        .schedule-table thead th:first-child {
+            width: 13%;
+            background: rgba(79,70,229,0.2);
+        }
+
+        .schedule-table tbody td {
+            padding: 1px 0px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            vertical-align: top; text-align: center;
+            height: 36px;
+            word-break: break-all;
+        }
+
+        .schedule-table tbody td:last-child { border-right: none; }
+
+        .schedule-table .time-cell {
+            background: rgba(15,23,42,0.5);
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-size: 0.46rem;
+            line-height: 1.2;
+            border-right: 2px solid rgba(79,70,229,0.2);
+        }
+
+        .schedule-table .period-label {
+            display: block;
+            font-size: 0.38rem;
+            opacity: 0.5;
+            margin-top: 1px;
+        }
+
+        /* ========== Course Cell ========== */
+        .course-cell {
+            border-radius: 4px;
+            padding: 3px 2px;
+            margin: 1px;
+            line-height: 1.2;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .course-cell:active { filter: brightness(1.2); }
+
+        /* Course cell color variants */
+        .course-cell.color-0 { background: rgba(79,70,229,0.18); border-left: 2px solid #818cf8; }
+        .course-cell.color-1 { background: rgba(6,182,212,0.15); border-left: 2px solid #67e8f9; }
+        .course-cell.color-2 { background: rgba(245,158,11,0.15); border-left: 2px solid #fbbf24; }
+        .course-cell.color-3 { background: rgba(16,185,129,0.15); border-left: 2px solid #34d399; }
+        .course-cell.color-4 { background: rgba(139,92,246,0.15); border-left: 2px solid #a78bfa; }
+        .course-cell.color-5 { background: rgba(236,72,153,0.15); border-left: 2px solid #f472b6; }
+        .course-cell.color-6 { background: rgba(239,68,68,0.15); border-left: 2px solid #f87171; }
+        .course-cell.color-7 { background: rgba(14,165,233,0.15); border-left: 2px solid #38bdf8; }
+
+        .course-cell .cc-name {
+            font-weight: 700; font-size: 0.5rem;
+            color: var(--text-primary);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            word-break: break-all;
+        }
+        .course-cell .cc-location, .course-cell .cc-teacher, .course-cell .cc-weeks { display: none; }
+
+        .empty-cell { }
+
+        /* ========== Course Detail Modal ========== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal-content {
+            width: 100%; max-width: 390px;
+            background: #1e293b;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: 0;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        .modal-handle { width: 32px; height: 4px; background: var(--surface-3); border-radius: 2px; margin: 10px auto 0; }
+        .modal-header { padding: 12px 16px 10px; }
+        .modal-header h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+        .modal-body { padding: 0 16px 20px; }
+
+        .modal-info-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.82rem;
+        }
+        .modal-info-row:last-child { border-bottom: none; }
+        .modal-info-row .mir-icon { width: 18px; text-align: center; flex-shrink: 0; }
+        .modal-info-row .mir-label { color: var(--text-muted); min-width: 50px; font-size: 0.72rem; }
+        .modal-info-row .mir-value { color: var(--text-primary); font-weight: 500; }
+
+        .modal-close-btn {
+            display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+            padding: 12px; border: none; border-radius: var(--radius-md);
+            background: var(--surface-3); color: var(--text-secondary);
+            font-family: var(--font); font-size: 0.85rem; font-weight: 600;
+            cursor: pointer;
+        }
+        .modal-close-btn:active { background: #475569; }
+
+        /* ========== Other Courses ========== */
+        .other-courses {
+            margin-top: 12px;
+            background: #1e293b;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .other-courses-header {
+            padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer;
+        }
+        .other-courses-header:active { background: rgba(255,255,255,0.03); }
+        .other-courses-header h3 { font-size: 0.76rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+        .other-courses-header .toggle-icon { font-size: 0.68rem; color: var(--text-muted); }
+        .other-courses-header.expanded .toggle-icon { transform: rotate(180deg); }
+        .other-courses-body { padding: 0 14px; max-height: 0; overflow: hidden; }
+        .other-courses-body.expanded { max-height: 600px; padding: 0 14px 12px; }
+        .other-course-item { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4; }
+        .other-course-item:last-child { border-bottom: none; }
+
+        /* ========== Toast ========== */
+        .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); padding: 9px 18px; background: #1e293b; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.78rem; font-weight: 500; z-index: 999; white-space: nowrap; }
+        .toast.hidden { display: none; }
+
+        /* ========== Footer ========== */
+        .footer { text-align: center; margin-top: 28px; padding: 14px 0; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.62rem; line-height: 1.6; }
+
+
+
+        /* ========== Scrollbar ========== */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+        /* ========== Performance Mode (Low-end Devices) ========== */
+        .low-perf .bg-orbs { display: none; }
+        .low-perf .course-cell { transition: none; }
+
+        /* ========== Reduced Motion Preference ========== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            .bg-orbs { display: none; }
+            .course-cell { transition: none; }
+        }
+
+        @media (max-width: 360px) {
+            .header h1 { font-size: 1rem; }
+            .header { padding: 14px 0 10px; }
+            .logo-icon { width: 34px; height: 34px; font-size: 18px; }
+            .semester-tag { font-size: 0.6rem; padding: 3px 10px; }
+            .stats-bar { gap: 4px; }
+            .stat-value { font-size: 1rem; }
+            .stat-label { font-size: 0.58rem; }
+            .week-pill { padding: 5px 8px; font-size: 0.64rem; }
+            .schedule-title { font-size: 0.92rem; }
+            .schedule-table thead th { padding: 4px 0px; font-size: 0.52rem; }
+            .schedule-table tbody td { height: 32px; }
+            .schedule-table .time-cell { font-size: 0.42rem; }
+            .schedule-table .period-label { font-size: 0.34rem; }
+            .course-cell { padding: 2px 1px; }
+            .course-cell .cc-name { font-size: 0.46rem; }
+            .other-course-item { font-size: 0.68rem; }
+            .modal-header h3 { font-size: 0.88rem; }
+            .modal-info-row { font-size: 0.78rem; }
+        }
+
+        @media (max-width: 320px) {
+            .app .inner { max-width: 310px; }
+            .header h1 { font-size: 0.92rem; }
+            .search-box input { font-size: 0.8rem; padding: 10px 12px 10px 34px; }
+            .search-box .search-icon { left: 10px; font-size: 0.82rem; }
+            .select-wrapper select { font-size: 0.8rem; padding: 10px 36px 10px 12px; }
+            .schedule-table thead th { font-size: 0.48rem; }
+            .schedule-table .time-cell { font-size: 0.38rem; }
+            .course-cell .cc-name { font-size: 0.42rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orbs"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+
+    <div class="app">
+        <!-- Header -->
+        <div class="inner">
+        <header class="header" id="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">📚</div>
+                <h1>盐工新生课表查询系统</h1>
+            </div>
+            <span class="semester-tag"><span class="dot"></span>2026-2027学年第1学期</span>
+        </header>
+
+        <!-- Search -->
+        <div class="search-box" id="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="搜索班级，如 B计算机261" autocomplete="off">
+            <div class="search-results" id="search-results"></div>
+        </div>
+
+        <!-- Selection -->
+        <div class="selection-panel" id="selection-panel">
+            <div class="select-group">
+                <label class="select-label"><span class="step-num">1</span>选择学院</label>
+                <div class="select-wrapper"><select id="college-select"><option value="">请选择学院</option></select></div>
+            </div>
+            <div class="select-group" id="major-group" style="display:none;">
+                <label class="select-label"><span class="step-num">2</span>选择专业</label>
+                <div class="select-wrapper"><select id="major-select" disabled><option value="">请先选择学院</option></select></div>
+            </div>
+            <div class="select-group" id="class-group" style="display:none;">
+                <label class="select-label"><span class="step-num">3</span>选择班级</label>
+                <div class="select-wrapper"><select id="class-select" disabled><option value="">请先选择专业</option></select></div>
+            </div>
+        </div>
+
+        <!-- Welcome -->
+        <div class="welcome-area" id="welcome-area">
+            <div class="welcome-icon">🎓</div>
+            <p class="welcome-text">选择学院 → 专业 → 班级</p>
+            <p class="welcome-sub">或直接搜索班级名称，快速查看课表</p>
+        </div>
+
+        <!-- Schedule Display -->
+        <div class="schedule-container" id="schedule-container">
+            <div class="schedule-header">
+                <h2 class="schedule-title" id="schedule-title"></h2>
+                <div class="schedule-meta" id="schedule-meta"></div>
+            </div>
+
+            <div class="stats-bar" id="stats-bar">
+                <div class="stat-item"><div class="stat-value" id="stat-total">0</div><div class="stat-label">总课程数</div></div>
+                <div class="stat-item"><div class="stat-value" id="stat-days">0</div><div class="stat-label">上课天数</div></div>
+                <div class="stat-item"><div class="stat-value" id="stat-teachers">0</div><div class="stat-label">授课教师</div></div>
+            </div>
+
+            <!-- Week Selector -->
+            <div class="week-selector" id="week-selector"></div>
+            <div class="week-indicator" id="week-indicator"></div>
+
+            <!-- Main Schedule Table -->
+            <div class="schedule-table-wrapper" id="schedule-table-wrapper">
+                <table class="schedule-table" id="schedule-table"></table>
+            </div>
+
+
+            <!-- Other Courses -->
+            <div class="other-courses" id="other-courses" style="display:none;">
+                <div class="other-courses-header" id="other-courses-header" onclick="toggleOtherCourses()">
+                    <h3>📋 其他课程安排</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="other-courses-body" id="other-courses-body"></div>
+            </div>
+        </div>
+        </div><!-- end inner -->
+
+        <footer class="footer">
+            <p>盐工新生课表查询系统 v1.0</p>
+            <p>数据来源：盐城工学院教务处 · 仅供参考</p>
+        </footer>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" id="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header"><h3 id="modal-title"></h3></div>
+            <div class="modal-body" id="modal-body"></div>
+            <button class="modal-close-btn" onclick="document.getElementById('modal-overlay').classList.remove('show')">关闭</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="schedule_data.js"></script>
+    <script>
+        // ========== Constants ==========
+        const WEEKDAYS = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+        const WEEKDAY_SHORT = ['周一','周二','周三','周四','周五','周六','周日'];
+        const SECTION_ORDER = ['1-2','3-4','5-6','7-8','9-10'];
+        const TIME_SLOTS = {
+            '1-2': { label: '第1-2节', time: '08:00-09:40', period: '上午' },
+            '3-4': { label: '第3-4节', time: '10:00-11:40', period: '上午' },
+            '5-6': { label: '第5-6节', time: '14:00-15:40', period: '下午' },
+            '7-8': { label: '第7-8节', time: '16:00-17:40', period: '下午' },
+            '9-10':{ label: '第9-10节', time: '19:00-20:40', period: '晚上' }
+        };
+
+        // Color assignment for courses
+        const COURSE_COLORS = 8;
+        let courseColorMap = {};
+        let colorCounter = 0;
+
+        function getCourseColor(name) {
+            if (!(name in courseColorMap)) {
+                courseColorMap[name] = colorCounter % COURSE_COLORS;
+                colorCounter++;
+            }
+            return courseColorMap[name];
+        }
+
+        let currentSchedule = null;
+        let currentClassName = '';
+        let currentWeek = 0; // 0 = 总课表, 1-18 = specific weeks
+        let maxWeek = 18;
+
+        // ========== DOM ==========
+        const collegeSelect = document.getElementById('college-select');
+        const majorSelect = document.getElementById('major-select');
+        const classSelect = document.getElementById('class-select');
+        const majorGroup = document.getElementById('major-group');
+        const classGroup = document.getElementById('class-group');
+        const welcomeArea = document.getElementById('welcome-area');
+        const scheduleContainer = document.getElementById('schedule-container');
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+
+        // ========== Init ==========
+        function init() {
+            populateColleges();
+            collegeSelect.addEventListener('change', onCollegeChange);
+            majorSelect.addEventListener('change', onMajorChange);
+            classSelect.addEventListener('change', onClassChange);
+            searchInput.addEventListener('input', onSearchInput);
+            searchInput.addEventListener('focus', onSearchInput);
+            document.addEventListener('click', e => { if (!e.target.closest('#search-box')) searchResults.classList.remove('show'); });
+
+
+        }
+
+        function populateColleges() {
+            const h = SCHEDULE_DATA.hierarchy;
+            const special = ['化生材料大类','研究生院','预科教育'];
+            const regular = Object.keys(h).filter(c => !special.includes(c)).sort((a,b) => a.localeCompare(b,'zh'));
+            const sp = Object.keys(h).filter(c => special.includes(c)).sort((a,b) => a.localeCompare(b,'zh'));
+            [...regular, ...sp].forEach(c => {
+                const o = document.createElement('option'); o.value = c; o.textContent = c;
+                collegeSelect.appendChild(o);
+            });
+        }
+
+        // ========== Selection Handlers ==========
+        function onCollegeChange() {
+            const college = collegeSelect.value;
+            majorSelect.innerHTML = '<option value="">请选择专业</option>';
+            classSelect.innerHTML = '<option value="">请先选择专业</option>';
+            classSelect.disabled = true; classGroup.style.display = 'none';
+            if (!college) { majorSelect.disabled = true; majorGroup.style.display = 'none'; return; }
+            const majors = Object.keys(SCHEDULE_DATA.hierarchy[college]).sort((a,b) => a.localeCompare(b,'zh'));
+            majors.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; majorSelect.appendChild(o); });
+            majorSelect.disabled = false; majorGroup.style.display = 'block'; majorGroup.style.animation = 'slideUp 0.3s ease-out';
+            if (majors.length === 1) { majorSelect.value = majors[0]; onMajorChange(); }
+        }
+
+        function onMajorChange() {
+            const college = collegeSelect.value, major = majorSelect.value;
+            classSelect.innerHTML = '<option value="">请选择班级</option>';
+            if (!major) { classSelect.disabled = true; classGroup.style.display = 'none'; return; }
+            const classes = SCHEDULE_DATA.hierarchy[college][major].sort((a,b) => a.localeCompare(b,'zh'));
+            classes.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; classSelect.appendChild(o); });
+            classSelect.disabled = false; classGroup.style.display = 'block'; classGroup.style.animation = 'slideUp 0.3s ease-out';
+            if (classes.length === 1) { classSelect.value = classes[0]; onClassChange(); }
+        }
+
+        function onClassChange() { const c = classSelect.value; if (c) showSchedule(c); }
+
+        // ========== Search ==========
+        function onSearchInput() {
+            const q = searchInput.value.trim().toLowerCase();
+            if (!q) { searchResults.classList.remove('show'); return; }
+            const matches = [];
+            for (const [cn, d] of Object.entries(SCHEDULE_DATA.schedules)) {
+                if (cn.toLowerCase().includes(q) || d.major.toLowerCase().includes(q) || d.college.toLowerCase().includes(q)) {
+                    matches.push({ cn, ...d });
+                }
+                if (matches.length >= 15) break;
+            }
+            if (!matches.length) {
+                searchResults.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:0.82rem;">未找到匹配结果</div>';
+            } else {
+                searchResults.innerHTML = matches.map(m => `
+                    <div class="search-result-item" onclick="selectSearchResult('${m.cn}')">
+                        <span class="sclass-name">${highlight(m.cn, q)}</span>
+                        <span class="sclass-info">${m.college} · ${m.major}</span>
+                    </div>`).join('');
+            }
+            searchResults.classList.add('show');
+        }
+
+        function highlight(text, q) {
+            const i = text.toLowerCase().indexOf(q);
+            if (i === -1) return text;
+            return text.slice(0,i) + '<span style="color:var(--accent-light);font-weight:700">' + text.slice(i,i+q.length) + '</span>' + text.slice(i+q.length);
+        }
+
+        function selectSearchResult(cn) {
+            searchResults.classList.remove('show'); searchInput.value = cn;
+            const d = SCHEDULE_DATA.schedules[cn];
+            if (d) { collegeSelect.value = d.college; onCollegeChange(); majorSelect.value = d.major; onMajorChange(); classSelect.value = cn; }
+            showSchedule(cn);
+        }
+
+        // ========== Week Utils ==========
+        function parseWeeks(weeksStr) {
+            // "3-16" => [3,4,...,16], "5" => [5], "3-10" => [3,...,10]
+            if (!weeksStr) return [];
+            const parts = weeksStr.split('-');
+            if (parts.length === 2) {
+                const s = parseInt(parts[0]), e = parseInt(parts[1]);
+                if (isNaN(s) || isNaN(e)) return [];
+                const arr = [];
+                for (let i = s; i <= e; i++) arr.push(i);
+                return arr;
+            }
+            const n = parseInt(weeksStr);
+            return isNaN(n) ? [] : [n];
+        }
+
+        function isCourseInWeek(course, week) {
+            if (week === 0) return true; // 总课表 shows all
+            const weeks = parseWeeks(course.weeks);
+            return weeks.includes(week);
+        }
+
+        function detectMaxWeek(data) {
+            let max = 0;
+            for (const courses of data.all_courses) {
+                const weeks = parseWeeks(courses.weeks);
+                if (weeks.length) max = Math.max(max, Math.max(...weeks));
+            }
+            // Also check other_courses text
+            for (const oc of (data.other_courses || [])) {
+                const m = oc.match(/(\d+)-(\d+)周/g);
+                if (m) m.forEach(s => { const p = s.match(/(\d+)-(\d+)/); if (p) max = Math.max(max, parseInt(p[2])); });
+                const m2 = oc.match(/\/(\d+)周/);
+                if (m2) max = Math.max(max, parseInt(m2[1]));
+            }
+            return max || 18;
+        }
+
+        // ========== Show Schedule ==========
+        function showSchedule(className) {
+            const data = SCHEDULE_DATA.schedules[className];
+            if (!data) { showToast('未找到课表数据'); return; }
+
+            currentSchedule = data;
+            currentClassName = className;
+            currentWeek = 0;
+            courseColorMap = {};
+            colorCounter = 0;
+
+            welcomeArea.style.display = 'none';
+            scheduleContainer.classList.add('show');
+
+            // Header
+            document.getElementById('schedule-title').textContent = className;
+            document.getElementById('schedule-meta').innerHTML =
+                `<span class="meta-badge">${data.college}</span><span class="meta-badge">${data.major}</span>`;
+
+            // Stats
+            const uniqueNames = [...new Set(data.all_courses.map(c => c.name))];
+            const teachers = [...new Set(data.all_courses.map(c => c.teacher).filter(Boolean))];
+            const daysWithCourses = WEEKDAYS.filter(day => {
+                const ds = data.schedule[day];
+                return ds && Object.keys(ds).some(k => ds[k].length > 0);
+            });
+            document.getElementById('stat-total').textContent = uniqueNames.length;
+            document.getElementById('stat-days').textContent = daysWithCourses.length;
+            document.getElementById('stat-teachers').textContent = teachers.length;
+
+            // Detect max week
+            maxWeek = detectMaxWeek(data);
+
+            // Build week selector
+            buildWeekSelector();
+
+            // Render table
+            renderScheduleTable();
+
+            // Other courses
+            const oc = data.other_courses || [];
+            const ocd = document.getElementById('other-courses');
+            if (oc.length) {
+                ocd.style.display = 'block';
+                document.getElementById('other-courses-body').innerHTML = oc.map(c => `<div class="other-course-item">${c}</div>`).join('');
+                document.getElementById('other-courses-body').classList.remove('expanded');
+                document.getElementById('other-courses-header').classList.remove('expanded');
+            } else { ocd.style.display = 'none'; }
+
+
+
+            setTimeout(() => scheduleContainer.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+            showToast(`已加载 ${className} 课表`);
+        }
+
+        // ========== Week Selector ==========
+        function buildWeekSelector() {
+            const el = document.getElementById('week-selector');
+            let html = `<button class="week-pill total-pill active" onclick="switchWeek(0)" id="wp-0">总课表</button>`;
+            for (let w = 1; w <= maxWeek; w++) {
+                html += `<button class="week-pill" onclick="switchWeek(${w})" id="wp-${w}">第${w}周</button>`;
+            }
+            el.innerHTML = html;
+            updateWeekIndicator();
+        }
+
+        function switchWeek(w) {
+            currentWeek = w;
+            document.querySelectorAll('.week-pill').forEach(p => p.classList.remove('active'));
+            document.getElementById('wp-' + w).classList.add('active');
+            // Scroll the active pill into view
+            document.getElementById('wp-' + w).scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+            updateWeekIndicator();
+            renderScheduleTable();
+        }
+
+        function updateWeekIndicator() {
+            const el = document.getElementById('week-indicator');
+            if (currentWeek === 0) {
+                el.innerHTML = '当前查看：<span>总课表（全部课程）</span>';
+            } else {
+                el.innerHTML = `当前查看：<span>第 ${currentWeek} 周课表</span>`;
+            }
+        }
+
+        // ========== Render Main Table ==========
+        function renderScheduleTable() {
+            if (!currentSchedule) return;
+            const table = document.getElementById('schedule-table');
+
+            _detailCache = [];
+
+            // Determine which days to show (for total, always show Mon-Sun; for specific week, could hide empty weekend)
+            let showDays = WEEKDAYS;
+            let showDayIdx = [0,1,2,3,4,5,6];
+
+            // Check if weekend has any courses for current view
+            const hasWeekend = [5,6].some(di => {
+                const day = WEEKDAYS[di];
+                const ds = currentSchedule.schedule[day];
+                if (!ds) return false;
+                return SECTION_ORDER.some(sec => {
+                    const courses = ds[sec] || [];
+                    return courses.some(c => isCourseInWeek(c, currentWeek));
+                });
+            });
+
+            if (!hasWeekend) {
+                showDays = WEEKDAYS.slice(0,5);
+                showDayIdx = [0,1,2,3,4];
+            }
+
+            // Build header
+            let html = '<thead><tr><th>时间</th>';
+            showDayIdx.forEach(di => { html += `<th>${WEEKDAY_SHORT[di]}</th>`; });
+            html += '</tr></thead><tbody>';
+
+            // Build rows
+            let hasAnyCourse = false;
+            SECTION_ORDER.forEach(section => {
+                const slot = TIME_SLOTS[section];
+                html += '<tr>';
+                html += `<td class="time-cell">${slot.label}<br><span class="period-label">${slot.time}</span></td>`;
+
+                showDayIdx.forEach(di => {
+                    const day = WEEKDAYS[di];
+                    const courses = (currentSchedule.schedule[day]?.[section]) || [];
+                    const filtered = courses.filter(c => isCourseInWeek(c, currentWeek));
+
+                    if (filtered.length > 0) {
+                        hasAnyCourse = true;
+                        const c = filtered[0];
+                        const ci = getCourseColor(c.name);
+                        const idx = _detailCache.length;
+                        _detailCache.push({ course: c, day, section });
+                        html += `<td>
+                            <div class="course-cell color-${ci}" onclick="showDetailByIdx(${idx})">
+                                <div class="cc-name">${c.name}</div>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += '<td class="empty-cell"></td>';
+                    }
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody>';
+
+            if (!hasAnyCourse) {
+                html = `<thead><tr><th>时间</th>`;
+                showDayIdx.forEach(di => { html += `<th>${WEEKDAY_SHORT[di]}</th>`; });
+                html += `</tr></thead><tbody><tr><td colspan="${showDayIdx.length + 1}" style="padding:40px 20px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2.5rem;margin-bottom:10px;opacity:0.4">😴</div>
+                    <div style="font-size:0.9rem;font-weight:500">第 ${currentWeek} 周没有课程安排</div>
+                    <div style="font-size:0.78rem;margin-top:6px;opacity:0.6">这周可以好好休息～</div>
+                </td></tr></tbody>`;
+            }
+
+            table.innerHTML = html;
+        }
+
+        // ========== Course Detail Modal ==========
+        let _detailCache = [];
+
+        function showDetailByIdx(idx) {
+            const { course, day, section } = _detailCache[idx];
+            showDetail(course, day, section);
+        }
+
+        function showDetail(course, day, section) {
+            const slot = TIME_SLOTS[section];
+            document.getElementById('modal-title').textContent = course.name;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="modal-info-row"><span class="mir-icon">📅</span><span class="mir-label">时间</span><span class="mir-value">${day} ${slot.label}（${slot.time}）</span></div>
+                ${course.teacher ? `<div class="modal-info-row"><span class="mir-icon">👨‍🏫</span><span class="mir-label">教师</span><span class="mir-value">${course.teacher}</span></div>` : ''}
+                ${course.location ? `<div class="modal-info-row"><span class="mir-icon">📍</span><span class="mir-label">地点</span><span class="mir-value">${course.location}</span></div>` : ''}
+                ${course.weeks ? `<div class="modal-info-row"><span class="mir-icon">📆</span><span class="mir-label">周次</span><span class="mir-value">第 ${course.weeks} 周</span></div>` : ''}
+                ${course.campus ? `<div class="modal-info-row"><span class="mir-icon">🏫</span><span class="mir-label">校区</span><span class="mir-value">${course.campus}</span></div>` : ''}
+            `;
+            document.getElementById('modal-overlay').classList.add('show');
+        }
+
+        function closeModal(e) {
+            if (e.target === document.getElementById('modal-overlay')) {
+                document.getElementById('modal-overlay').classList.remove('show');
+            }
+        }
+
+        // ========== Other Courses Toggle ==========
+        function toggleOtherCourses() {
+            document.getElementById('other-courses-header').classList.toggle('expanded');
+            document.getElementById('other-courses-body').classList.toggle('expanded');
+        }
+
+        // ========== Toast ==========
+        let toastTimer = null;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.add('hidden'), 2000);
+        }
+
+        // ========== Low-end Device Detection ==========
+        function isLowEndDevice() {
+            try {
+                const cores = navigator.hardwareConcurrency || 2;
+                const mem = navigator.deviceMemory || 2;
+                const hasLowFPS = matchMedia('(max-width: 360px)').matches;
+                return cores <= 2 || mem <= 2 || hasLowFPS;
+            } catch(e) {
+                return false;
+            }
+        }
+
+        function applyPerformanceMode() {
+            if (isLowEndDevice()) {
+                document.documentElement.classList.add('low-perf');
+                const orbs = document.querySelectorAll('.bg-orbs .orb');
+                orbs.forEach(orb => orb.remove());
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyPerformanceMode();
+            init();
+        });
+    </script>
+</body>
+</html>
